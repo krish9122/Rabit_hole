@@ -1,0 +1,23 @@
+version: '3'
+services:
+  db:
+    image: postgres:15.3
+    container_name: postgres
+    restart: always
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: Rabit_hole
+      POSTGRES_PASSWORD: Rabit_hole1
+      POSTGRES_DB: RavitDB
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+
+      

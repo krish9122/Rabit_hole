@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoomRole {
+  OWNER
+  MEMBER
+}
+
+enum RoomStatus {
+  ACTIVE
+  EXPIRED
+  CLOSED
+}
+
+model User {
+  id              String @id @default(uuid()) @db.Uuid
+  accountId       String @unique
+  passwordHash    String
+  recoveryKeyHash String
+
+  createdRooms Room[]       @relation("RoomCreator")
+  ownedRooms   Room[]       @relation("RoomOwner")
+  sessions     Session[]
+  memberships  RoomMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+
+  tokenHash String @unique
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Room {
+  id String @id @default(uuid()) @db.Uuid
+
+  name         String     @db.VarChar(80)
+  passwordHash String?
+  status       RoomStatus @default(ACTIVE)
+
+  creatorId String @db.Uuid
+  ownerId   String @db.Uuid
+
+  creator User @relation("RoomCreator", fields: [creatorId], references: [id])
+  owner   User @relation("RoomOwner", fields: [ownerId], references: [id])
+
+  members RoomMember[]
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt, status])
+  @@index([ownerId])
+}
+
+model RoomMember {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @db.Uuid
+  roomId String @db.Uuid
+
+  codename String   @db.VarChar(30)
+  role     RoomRole @default(MEMBER)
+
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@unique([roomId, codename])
+  @@index([userId])
+  @@index([roomId, leftAt])
+}
